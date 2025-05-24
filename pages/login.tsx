@@ -8,20 +8,22 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      const user = data?.session?.user || null
-      setUser(user)
+      const currentUser = data?.session?.user
+      setUser(currentUser)
 
-      if (user) {
-        router.push('/')
+      // Jika sudah login, langsung ke dashboard
+      if (currentUser) {
+        router.push('/dashboard')
       }
     })
 
+    // Dengarkan perubahan login
     supabase.auth.onAuthStateChange((_event, session) => {
-      const user = session?.user || null
-      setUser(user)
+      const currentUser = session?.user
+      setUser(currentUser)
 
-      if (user) {
-        router.push('/')
+      if (currentUser) {
+        router.push('/dashboard')
       }
     })
   }, [])
@@ -30,25 +32,11 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({ provider: 'google' })
   }
 
-  const logout = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-  }
-
   return (
     <main style={{ padding: 50 }}>
-      <h1>Halaman Login</h1>
-      {!user ? (
-        <>
-          <p>Kamu belum login</p>
-          <button onClick={loginWithGoogle}>Login dengan Google</button>
-        </>
-      ) : (
-        <>
-          <p>Sudah login sebagai: {user.email}</p>
-          <button onClick={logout}>Logout</button>
-        </>
-      )}
+      <h1>Login ke FranchiseHub</h1>
+      <p>Silakan login dengan Google untuk melanjutkan.</p>
+      <button onClick={loginWithGoogle}>Login dengan Google</button>
     </main>
   )
 }
