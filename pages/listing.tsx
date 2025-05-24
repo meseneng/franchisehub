@@ -9,13 +9,13 @@ export default function ListingPage() {
     const fetchListings = async () => {
       const { data, error } = await supabase
         .from('franchise_listings')
-        .select('*')
+        .select('id, franchise_listing, description, category, location, investment_start, investment_end, operation_model, image')
         .eq('is_active', true)
 
       if (error) {
         console.error('Gagal memuat data:', error.message)
       } else {
-        setListings(data)
+        setListings(data || [])
       }
 
       setLoading(false)
@@ -28,19 +28,18 @@ export default function ListingPage() {
     <main style={{ padding: 50 }}>
       <h1>Daftar Franchise Aktif</h1>
       {loading ? (
-        <p>Loading data...</p>
+        <p>Memuat data...</p>
       ) : listings.length === 0 ? (
-        <p>Tidak ada listing aktif saat ini.</p>
+        <p>Tidak ada listing aktif.</p>
       ) : (
         <ul>
-          {listings.map((listing) => (
-            <li key={listing.id}>
-              <strong>{listing.nama_usaha}</strong> <br />
-              Kategori: {listing.kategori} <br />
-              Lokasi: {listing.lokasi} <br />
-              Minimal Investasi: Rp{listing.min_investasi.toLocaleString()} <br />
-              Model: {listing.model_operasional}
-              <hr />
+          {listings.map((item) => (
+            <li key={item.id} style={{ marginBottom: 30 }}>
+              <h2>{item.franchise_listing}</h2>
+              <p><strong>Kategori:</strong> {item.category}</p>
+              <p><strong>Lokasi:</strong> {item.location}</p>
+              <p><strong>Investasi:</strong> Rp{item.investment_start.toLocaleString()} – Rp{item.investment_end.toLocaleString()}</p>
+              <img src={item.image} alt={item.franchise_listing} width={300} />
             </li>
           ))}
         </ul>
