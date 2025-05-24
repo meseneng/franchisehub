@@ -91,10 +91,10 @@ export default function AddListingPage() {
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h1>Tambah Franchise Baru</h1>
+      <h1>Tambah Franchise Baru [DEBUG]</h1>
 
       {errorMsg && (
-        <pre style={{ background: '#fee', padding: '1rem', color: 'red' }}>
+        <pre style={{ background: '#fee', padding: '1rem', color: 'red', whiteSpace: 'pre-wrap' }}>
           <strong>Error:</strong><br />
           {errorMsg}
         </pre>
