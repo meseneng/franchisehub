@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 
 export default function AddListingPage() {
   const router = useRouter()
+
   const [form, setForm] = useState({
     franchise_listing: '',
     description: '',
@@ -14,9 +15,11 @@ export default function AddListingPage() {
     investment_start: 0,
     investment_end: 0,
   })
+
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -29,14 +32,15 @@ export default function AddListingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMsg(null)
 
     try {
-      // 1. Ambil user login
+      // Ambil user
       const { data: userData, error: userError } = await supabase.auth.getUser()
       if (userError || !userData?.user) throw new Error('Gagal ambil user login.')
       const userId = userData.user.id
 
-      // 2. Upload logo
+      // Upload logo
       let logoUrl = ''
       if (logoFile) {
         const { data, error } = await supabase.storage
@@ -46,7 +50,7 @@ export default function AddListingPage() {
         logoUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // 3. Upload gambar
+      // Upload gambar
       let imageUrl = ''
       if (imageFile) {
         const { data, error } = await supabase.storage
@@ -56,7 +60,7 @@ export default function AddListingPage() {
         imageUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // 4. Insert data
+      // Data yang akan dikirim
       const newData = {
         ...form,
         user_id: userId,
@@ -76,7 +80,7 @@ export default function AddListingPage() {
       if (insertError) {
         console.error('Insert Error:', insertError)
         console.log('Data yang dikirim:', newData)
-        alert(`Gagal menambahkan listing:\n\n${JSON.stringify(insertError, null, 2)}`)
+        setErrorMsg(JSON.stringify(insertError, null, 2)) // tampilkan di halaman
         return
       }
 
@@ -84,7 +88,7 @@ export default function AddListingPage() {
       router.push('/dashboard')
     } catch (err: any) {
       console.error('Unexpected Error:', err)
-      alert(`Gagal menambahkan listing:\n\n${err.message}`)
+      setErrorMsg(err.message)
     } finally {
       setLoading(false)
     }
@@ -93,6 +97,14 @@ export default function AddListingPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Tambah Franchise Baru</h1>
+
+      {errorMsg && (
+        <pre style={{ background: '#fee', padding: '1rem', color: 'red' }}>
+          <strong>Error:</strong><br />
+          {errorMsg}
+        </pre>
+      )}
+
       <form onSubmit={handleSubmit}>
         <input name="franchise_listing" placeholder="Nama Usaha" onChange={handleChange} required />
         <input name="description" placeholder="Deskripsi" onChange={handleChange} required />
