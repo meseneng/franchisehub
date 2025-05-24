@@ -2,65 +2,74 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 
-export default function Home() {
+export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const getUserData = async () => {
+    const fetchData = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const sessionUser = sessionData?.session?.user
 
       if (!sessionUser) {
-        setLoading(false)
+        router.push('/login')
         return
       }
 
-      // Ambil data dari tabel `users`
-      const { data, error } = await supabase
+      // Ambil data user dari tabel `users`
+      const { data: userData, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', sessionUser.id)
-        .single() // penting agar tidak loop
+        .single()
 
-      if (error) {
-        console.error('Gagal mengambil data user:', error)
+      if (error || !userData) {
+        console.error(error)
+        setUser(null)
       } else {
-        setUser(data)
+        setUser(userData)
       }
 
       setLoading(false)
     }
 
-    getUserData()
+    fetchData()
   }, [])
 
-  const handleLogout = async () => {
+  const logout = async () => {
     await supabase.auth.signOut()
-    router.reload()
+    router.push('/login')
   }
 
   if (loading) return <p>Loading...</p>
 
+  if (!user) return <p>Gagal memuat data. Silakan login ulang.</p>
+
   return (
     <main style={{ padding: 50 }}>
-      <h1>Halo dari FranchiseHub!</h1>
-      <p>Ini halaman utama sederhana. Siap online!</p>
-
-      {!user ? (
-        <p>
-          Kamu belum login. Silakan login dulu di{' '}
-          <a href="/login" style={{ color: 'blue' }}>halaman login</a>.
-        </p>
-      ) : (
-        <>
-          <p>
-            Kamu login sebagai: <strong>{user.email}</strong>
-          </p>
-          <button onClick={handleLogout}>Logout</button>
-        </>
-      )}
+      <h1>Dashboard FranchiseHub</h1>
+      <p>
+        Selamat datang, <strong>{user.email}</strong>
+      </p>
+      <p>
+        Role: <strong>{user.role}</strong>
+      </p>
+      <p>
+        Status Verifikasi:{' '}
+        <strong>{user.is_verified ? 'Terverifikasi' : 'Belum'}</strong>
+      </p>
+      <p>
+        Bergabung sejak:{' '}
+        <strong>
+          {new Date(user.joined_at).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </strong>
+      </p>
+      <button onClick={logout}>Logout</button>
     </main>
   )
 }
