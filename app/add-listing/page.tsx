@@ -31,15 +31,12 @@ export default function AddListingPage() {
     setLoading(true)
 
     try {
-      // Ambil user ID
+      // 1. Ambil user login
       const { data: userData, error: userError } = await supabase.auth.getUser()
-      if (userError || !userData?.user) {
-        throw new Error('Gagal ambil user login.')
-      }
-
+      if (userError || !userData?.user) throw new Error('Gagal ambil user login.')
       const userId = userData.user.id
 
-      // Upload logo
+      // 2. Upload logo
       let logoUrl = ''
       if (logoFile) {
         const { data, error } = await supabase.storage
@@ -49,7 +46,7 @@ export default function AddListingPage() {
         logoUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // Upload gambar
+      // 3. Upload gambar
       let imageUrl = ''
       if (imageFile) {
         const { data, error } = await supabase.storage
@@ -59,29 +56,31 @@ export default function AddListingPage() {
         imageUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // Insert ke database
-      const { error: insertError } = await supabase.from('franchise_listings').insert([
-        {
-          ...form,
-          user_id: userId,
-          logo: logoUrl,
-          image: imageUrl,
-          is_paid: false,
-          is_active: false,
-          is_verified: false,
-          total_investment: 0,
-          view_count: 0,
-          published_at: null,
-          expires_at: null,
-        },
-      ])
+      // 4. Insert ke tabel
+      const newData = {
+        ...form,
+        user_id: userId,
+        logo: logoUrl,
+        image: imageUrl,
+        is_paid: false,
+        is_active: false,
+        is_verified: false,
+        total_investment: 0,
+        view_count: 0,
+        published_at: null,
+        expires_at: null,
+      }
+
+      const { error: insertError } = await supabase.from('franchise_listings').insert([newData])
 
       if (insertError) {
         console.error('Insert Error:', insertError)
-        throw new Error('Insert data gagal.')
+        console.log('Data yang dikirim:', newData)
+        alert(`Gagal menambahkan listing: ${insertError.message}`)
+        return
       }
 
-      alert('Listing berhasil ditambahkan! Menunggu verifikasi admin.')
+      alert('Listing berhasil ditambahkan!')
       router.push('/dashboard')
     } catch (err: any) {
       alert(`Gagal menambahkan listing: ${err.message}`)
