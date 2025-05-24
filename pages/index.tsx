@@ -17,7 +17,6 @@ export default function HomePage() {
         return
       }
 
-      // Ambil data user dari tabel `users`
       const { data: userData, error } = await supabase
         .from('users')
         .select('*')
@@ -43,8 +42,11 @@ export default function HomePage() {
   }
 
   if (loading) return <p>Loading...</p>
-
   if (!user) return <p>Gagal memuat data. Silakan login ulang.</p>
+
+  const joinedDate = user.joined_at
+    ? new Date(user.joined_at.toString())
+    : null
 
   return (
     <main style={{ padding: 50 }}>
@@ -62,11 +64,13 @@ export default function HomePage() {
       <p>
         Bergabung sejak:{' '}
         <strong>
-          {new Date(user.joined_at).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
+          {joinedDate
+            ? joinedDate.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })
+            : 'Tanggal tidak tersedia'}
         </strong>
       </p>
       <button onClick={logout}>Logout</button>
