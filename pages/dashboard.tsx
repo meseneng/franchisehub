@@ -9,8 +9,10 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      const currentUser = data?.session?.user
+    const fetchData = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const currentUser = sessionData?.session?.user
+
       if (!currentUser) {
         router.push('/login')
         return
@@ -18,21 +20,22 @@ export default function DashboardPage() {
 
       setUser(currentUser)
 
-      // Ambil data dari tabel users (custom)
       const { data: profileData, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', currentUser.id)
         .single()
 
-      if (error) {
-        console.error('Gagal ambil data profil:', error.message)
-      } else {
-        setProfile(profileData)
+      if (error || !profileData) {
+        setLoading(false)
+        return
       }
 
+      setProfile(profileData)
       setLoading(false)
-    })
+    }
+
+    fetchData()
   }, [])
 
   const logout = async () => {
@@ -41,7 +44,7 @@ export default function DashboardPage() {
   }
 
   if (loading) return <p>Loading...</p>
-  if (!user || !profile) return <p>Gagal memuat data. Silakan login ulang.</p>
+  if (!profile) return <p>Gagal memuat data. Silakan login ulang.</p>
 
   return (
     <main style={{ padding: 50 }}>
@@ -49,9 +52,17 @@ export default function DashboardPage() {
       <p>Selamat datang, <strong>{user.email}</strong></p>
       <p>Role: <strong>{profile.role}</strong></p>
       <p>Status Verifikasi: <strong>{profile.is_verified ? 'Terverifikasi' : 'Belum'}</strong></p>
-      <p>Bergabung sejak: <strong>{new Date(profile.joined_at).toLocaleString()}</strong></p>
-
-      <button onClick={logout} style={{ marginTop: 20 }}>Logout</button>
+      <p>
+        Bergabung sejak:{' '}
+        <strong>
+          {new Date(profile.joined_at).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </strong>
+      </p>
+      <button onClick={logout}>Logout</button>
     </main>
   )
 }
