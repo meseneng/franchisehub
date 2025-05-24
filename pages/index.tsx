@@ -1,42 +1,64 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useRouter } from 'next/router'
 
 export default function Home() {
   const [user, setUser] = useState<any>(null)
+  const [userData, setUserData] = useState<any>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data?.session?.user || null)
-    })
+    const fetchUser = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const sessionUser = sessionData?.session?.user
+      setUser(sessionUser)
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null)
-    })
+      if (sessionUser) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', sessionUser.id)
+          .single()
+
+        if (error) console.error('Gagal ambil data user:', error)
+        else setUserData(data)
+      }
+    }
+
+    fetchUser()
   }, [])
 
-  const handleLogout = async () => {
+  const logout = async () => {
     await supabase.auth.signOut()
     setUser(null)
-    window.location.href = '/login'
+    router.push('/login')
+  }
+
+  if (!user) {
+    return (
+      <main style={{ padding: 50 }}>
+        <h1>Halo dari FranchiseHub!</h1>
+        <p>Ini halaman utama sederhana. Siap online!</p>
+        <p>Kamu belum login. Silakan login dulu di <a href="/login">halaman login</a>.</p>
+      </main>
+    )
   }
 
   return (
     <main style={{ padding: 50 }}>
       <h1>Halo dari FranchiseHub!</h1>
       <p>Ini halaman utama sederhana. Siap online!</p>
+      <p>Kamu login sebagai: <strong>{user.email}</strong></p>
 
-      {user ? (
+      {userData && (
         <>
-          <p style={{ marginTop: 20 }}>
-            Kamu login sebagai: <strong>{user.email}</strong>
-          </p>
-          <button onClick={handleLogout}>Logout</button>
+          <p>Peran: <strong>{userData.role}</strong></p>
+          <button onClick={() => router.push('/dashboard')}>Go to Dashboard</button>
         </>
-      ) : (
-        <p style={{ marginTop: 20 }}>
-          Kamu belum login. Silakan login dulu di <a href="/login">halaman login</a>.
-        </p>
       )}
+
+      <br />
+      <button onClick={logout}>Logout</button>
     </main>
   )
 }
