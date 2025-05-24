@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -14,16 +15,23 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
+
       setUser(currentUser)
 
-      // Ambil data tambahan dari tabel `users`
-      const { data: profileData } = await supabase
+      // Ambil data dari tabel users (custom)
+      const { data: profileData, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', currentUser.id)
         .single()
 
-      setProfile(profileData)
+      if (error) {
+        console.error('Gagal ambil data profil:', error.message)
+      } else {
+        setProfile(profileData)
+      }
+
+      setLoading(false)
     })
   }, [])
 
@@ -32,17 +40,18 @@ export default function DashboardPage() {
     router.push('/login')
   }
 
-  if (!user || !profile) return <p>Loading...</p>
+  if (loading) return <p>Loading...</p>
+  if (!user || !profile) return <p>Gagal memuat data. Silakan login ulang.</p>
 
   return (
     <main style={{ padding: 50 }}>
       <h1>Dashboard FranchiseHub</h1>
-      <p>Selamat datang, <strong>{profile.email}</strong></p>
-      <p>Role kamu: <strong>{profile.role}</strong></p>
-      <p>Status verifikasi: <strong>{profile.is_verified ? 'Terverifikasi' : 'Belum'}</strong></p>
+      <p>Selamat datang, <strong>{user.email}</strong></p>
+      <p>Role: <strong>{profile.role}</strong></p>
+      <p>Status Verifikasi: <strong>{profile.is_verified ? 'Terverifikasi' : 'Belum'}</strong></p>
       <p>Bergabung sejak: <strong>{new Date(profile.joined_at).toLocaleString()}</strong></p>
-      <br />
-      <button onClick={logout}>Logout</button>
+
+      <button onClick={logout} style={{ marginTop: 20 }}>Logout</button>
     </main>
   )
 }
