@@ -9,22 +9,25 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const fetchData = async () => {
+    const getSessionAndUser = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const currentUser = sessionData?.session?.user
+      setUser(currentUser)
 
       if (!currentUser) {
         router.push('/login')
         return
       }
 
-      setUser(currentUser)
-
+      // Ambil data dari tabel 'users'
       const { data: profileData, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', currentUser.id)
         .single()
+
+      console.log('Supabase error:', error)
+      console.log('Supabase data:', profileData)
 
       if (error || !profileData) {
         setLoading(false)
@@ -35,33 +38,37 @@ export default function DashboardPage() {
       setLoading(false)
     }
 
-    fetchData()
-  }, [])
+    getSessionAndUser()
+  }, [router])
 
   const logout = async () => {
     await supabase.auth.signOut()
     router.push('/login')
   }
 
-  if (loading) return <p>Loading...</p>
-  if (!profile) return <p>Gagal memuat data. Silakan login ulang.</p>
+  if (loading) {
+    return <p>Loading...</p>
+  }
+
+  if (!profile) {
+    return <p>Gagal memuat data. Silakan login ulang.</p>
+  }
+
+  const tanggal = new Date(profile.joined_at).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
   return (
     <main style={{ padding: 50 }}>
       <h1>Dashboard FranchiseHub</h1>
-      <p>Selamat datang, <strong>{user.email}</strong></p>
+      <p>Selamat datang, <strong>{user?.email}</strong></p>
       <p>Role: <strong>{profile.role}</strong></p>
       <p>Status Verifikasi: <strong>{profile.is_verified ? 'Terverifikasi' : 'Belum'}</strong></p>
-      <p>
-        Bergabung sejak:{' '}
-        <strong>
-          {new Date(profile.joined_at).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </strong>
-      </p>
+      <p>Bergabung sejak: <strong>{tanggal}</strong></p>
       <button onClick={logout}>Logout</button>
     </main>
   )
