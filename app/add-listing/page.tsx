@@ -35,12 +35,10 @@ export default function AddListingPage() {
     setErrorMsg(null)
 
     try {
-      // Ambil user
       const { data: userData, error: userError } = await supabase.auth.getUser()
       if (userError || !userData?.user) throw new Error('Gagal ambil user login.')
       const userId = userData.user.id
 
-      // Upload logo
       let logoUrl = ''
       if (logoFile) {
         const { data, error } = await supabase.storage
@@ -50,7 +48,6 @@ export default function AddListingPage() {
         logoUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // Upload gambar
       let imageUrl = ''
       if (imageFile) {
         const { data, error } = await supabase.storage
@@ -60,7 +57,6 @@ export default function AddListingPage() {
         imageUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // Data yang akan dikirim
       const newData = {
         ...form,
         user_id: userId,
@@ -80,11 +76,10 @@ export default function AddListingPage() {
       if (insertError) {
         console.error('Insert Error:', insertError)
         console.log('Data yang dikirim:', newData)
-        setErrorMsg(JSON.stringify(insertError, null, 2)) // tampilkan di halaman
+        setErrorMsg(JSON.stringify(insertError, null, 2))
         return
       }
 
-      alert('Listing berhasil ditambahkan!')
       router.push('/dashboard')
     } catch (err: any) {
       console.error('Unexpected Error:', err)
