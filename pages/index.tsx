@@ -2,59 +2,65 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabaseClient'
 
-type UserData = {
-  id: string
-  email: string
-  role: string
-  is_verified: boolean
-  joined_at: string
-}
-
 export default function Home() {
-  const [sessionUser, setSessionUser] = useState<any>(null)
-  const [userData, setUserData] = useState<UserData | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      const user = data.session?.user
-      setSessionUser(user)
+    const getUserData = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const sessionUser = sessionData?.session?.user
 
-      if (!user) {
-        router.push('/login')
+      if (!sessionUser) {
+        setLoading(false)
         return
       }
 
-      const { data: userDetails, error } = await supabase
+      // Ambil data dari tabel `users`
+      const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.id)
-        .single()
+        .eq('id', sessionUser.id)
+        .single() // penting agar tidak loop
 
       if (error) {
-        console.error('Gagal fetch user data:', error)
+        console.error('Gagal mengambil data user:', error)
       } else {
-        setUserData(userDetails)
+        setUser(data)
       }
-    })
+
+      setLoading(false)
+    }
+
+    getUserData()
   }, [])
 
-  const logout = async () => {
+  const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/login')
+    router.reload()
   }
 
-  if (!sessionUser || !userData) return <p>Loading...</p>
+  if (loading) return <p>Loading...</p>
 
   return (
     <main style={{ padding: 50 }}>
       <h1>Halo dari FranchiseHub!</h1>
       <p>Ini halaman utama sederhana. Siap online!</p>
-      <p>Kamu login sebagai: <strong>{userData.email}</strong></p>
-      <p>Role: {userData.role}</p>
-      <p>Verified: {userData.is_verified ? 'Ya' : 'Belum'}</p>
-      <p>Bergabung sejak: {new Date(userData.joined_at).toLocaleString()}</p>
-      <button onClick={logout}>Logout</button>
+
+      {!user ? (
+        <p>
+          Kamu belum login. Silakan login dulu di{' '}
+          <a href="/login" style={{ color: 'blue' }}>halaman login</a>.
+        </p>
+      ) : (
+        <>
+          <p>
+            Kamu login sebagai: <strong>{user.email}</strong>
+          </p>
+          <button onClick={handleLogout}>Logout</button>
+        </>
+      )}
     </main>
   )
 }
