@@ -56,7 +56,7 @@ export default function AddListingPage() {
         imageUrl = supabase.storage.from('franchisehub').getPublicUrl(data.path).data.publicUrl
       }
 
-      // 4. Insert ke tabel
+      // 4. Insert data
       const newData = {
         ...form,
         user_id: userId,
@@ -76,14 +76,15 @@ export default function AddListingPage() {
       if (insertError) {
         console.error('Insert Error:', insertError)
         console.log('Data yang dikirim:', newData)
-        alert(`Gagal menambahkan listing: ${insertError.message}`)
+        alert(`Gagal menambahkan listing:\n\n${JSON.stringify(insertError, null, 2)}`)
         return
       }
 
       alert('Listing berhasil ditambahkan!')
       router.push('/dashboard')
     } catch (err: any) {
-      alert(`Gagal menambahkan listing: ${err.message}`)
+      console.error('Unexpected Error:', err)
+      alert(`Gagal menambahkan listing:\n\n${err.message}`)
     } finally {
       setLoading(false)
     }
