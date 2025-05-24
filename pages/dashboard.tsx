@@ -1,64 +1,57 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
 import { useRouter } from 'next/router'
+import { supabase } from '../lib/supabaseClient'
 
-export default function Home() {
+export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
-  const [userData, setUserData] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const sessionUser = sessionData?.session?.user
-      setUser(sessionUser)
-
-      if (sessionUser) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', sessionUser.id)
-          .single()
-
-        if (error) console.error('Gagal ambil data user:', error)
-        else setUserData(data)
+    supabase.auth.getSession().then(async ({ data }) => {
+      const currentUser = data?.session?.user
+      if (!currentUser) {
+        router.push('/login')
+        return
       }
-    }
 
-    fetchUser()
+      setUser(currentUser)
+
+      // Ambil data dari tabel users (custom)
+      const { data: profileData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single()
+
+      if (error) {
+        console.error('Gagal ambil data profil:', error.message)
+      } else {
+        setProfile(profileData)
+      }
+
+      setLoading(false)
+    })
   }, [])
 
   const logout = async () => {
     await supabase.auth.signOut()
-    setUser(null)
     router.push('/login')
   }
 
-  if (!user) {
-    return (
-      <main style={{ padding: 50 }}>
-        <h1>Halo dari FranchiseHub!</h1>
-        <p>Ini halaman utama sederhana. Siap online!</p>
-        <p>Kamu belum login. Silakan login dulu di <a href="/login">halaman login</a>.</p>
-      </main>
-    )
-  }
+  if (loading) return <p>Loading...</p>
+  if (!user || !profile) return <p>Gagal memuat data. Silakan login ulang.</p>
 
   return (
     <main style={{ padding: 50 }}>
-      <h1>Halo dari FranchiseHub!</h1>
-      <p>Ini halaman utama sederhana. Siap online!</p>
-      <p>Kamu login sebagai: <strong>{user.email}</strong></p>
+      <h1>Dashboard FranchiseHub</h1>
+      <p>Selamat datang, <strong>{user.email}</strong></p>
+      <p>Role: <strong>{profile.role}</strong></p>
+      <p>Status Verifikasi: <strong>{profile.is_verified ? 'Terverifikasi' : 'Belum'}</strong></p>
+      <p>Bergabung sejak: <strong>{new Date(profile.joined_at).toLocaleString()}</strong></p>
 
-      {userData && (
-        <>
-          <p>Peran: <strong>{userData.role}</strong></p>
-          <button onClick={() => router.push('/dashboard')}>Go to Dashboard</button>
-        </>
-      )}
-
-      <br />
-      <button onClick={logout}>Logout</button>
+      <button onClick={logout} style={{ marginTop: 20 }}>Logout</button>
     </main>
   )
 }
