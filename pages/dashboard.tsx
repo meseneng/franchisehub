@@ -11,7 +11,6 @@ export default function DashboardPage() {
       const currentUser = data?.session?.user
       setUser(currentUser)
 
-      // Jika belum login, arahkan ke /login
       if (!currentUser) {
         router.push('/login')
       }
@@ -23,7 +22,9 @@ export default function DashboardPage() {
     router.push('/login')
   }
 
-  if (!user) return null // jangan render apapun sampai cek login selesai
+  if (user === null) {
+    return <p style={{ padding: 50 }}>Loading...</p>
+  }
 
   return (
     <main style={{ padding: 50 }}>
